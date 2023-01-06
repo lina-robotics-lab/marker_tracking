@@ -164,7 +164,7 @@ class AcquisitionControl(object):
         self.group_names = group_names
 
 def main():
-    N_corners = 6
+    N_corners = 8
     grid_d = 0.01
     corners = []
     try:
@@ -223,7 +223,8 @@ def main():
         for i in range(len(waypoints)):
             waypoints[i].position.x = grid[i,0]
             waypoints[i].position.y = grid[i,1]
-            waypoints[i].position.z = grid[i,2]     
+            waypoints[i].position.z = grid[i,2]  
+               
 
         move_group = tutorial.move_group
         for i in range(len(waypoints)):
