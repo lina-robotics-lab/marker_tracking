@@ -1,0 +1,8 @@
+# Define the index of the waypoint to go to.
+uint32 waypoint_idx
+---
+# Define the success/failure of going to the waypoint.
+bool waypoint_reached
+---
+# Define the dummy feedback information, which is the current waypoint_idx, required by the action library.
+uint32 current_idx 
