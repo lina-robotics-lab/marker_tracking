@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(robot-eye-tracking-acquisition)
+project(eye_tracking_server)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -23,6 +23,10 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_eigen
   tf2_geometry_msgs
   tf2_ros
+  genmsg 
+  actionlib_msgs 
+  actionlib
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -66,24 +70,19 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+   FILES
+   nbOfPosition.srv
+)
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+add_action_files(
+  FILES
+  GoTo.action
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   tf2_geometry_msgs
-# )
+generate_messages(DEPENDENCIES actionlib_msgs std_msgs)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -116,7 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES robot-eye-tracking-acquisition
+#  LIBRARIES eye_tracking_server
 #  CATKIN_DEPENDS cl_conversions geometric_shapes interactive_markers moveit_core moveit_ros_perception moveit_ros_planning moveit_ros_planning_interface moveit_visual_tools pcl_ros pluginlib rosbag rviz_visual_tools tf2_eigen tf2_geometry_msgs tf2_ros
 #  DEPENDS system_lib
 )
@@ -134,7 +133,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/robot-eye-tracking-acquisition.cpp
+#   src/${PROJECT_NAME}/eye_tracking_server.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -145,7 +144,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/robot-eye-tracking-acquisition_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/eye_tracking_server_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -209,7 +208,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_robot-eye-tracking-acquisition.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_eye_tracking_server.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

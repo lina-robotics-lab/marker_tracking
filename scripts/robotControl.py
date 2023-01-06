@@ -105,19 +105,17 @@ def all_close(goal, actual, tolerance):
     return True
 
 
-class AcquisitionInterface(object):
-    """AcquisitionInterface"""
+class AcquisitionControl(object):
+    """AcquisitionControl"""
 
     def __init__(self):
-        super(AcquisitionInterface
+        super(AcquisitionControl
 , self).__init__()
 
         ## BEGIN_SUB_TUTORIAL setup
         ##
         ## First initialize `moveit_commander`_ and a `rospy`_ node:
-        moveit_commander.roscpp_initialize(sys.argv)
-        rospy.init_node("move_group_python_interface_tutorial", anonymous=True)
-
+        
         ## Instantiate a `RobotCommander`_ object. Provides information such as the robot's
         ## kinematic model and the robot's current joint states
         robot = moveit_commander.RobotCommander()
@@ -165,85 +163,6 @@ class AcquisitionInterface(object):
         self.eef_link = eef_link
         self.group_names = group_names
 
-    def go_to_joint_state(self):
-        # Copy class variables to local variables to make the web tutorials more clear.
-        # In practice, you should use the class variables directly unless you have a good
-        # reason not to.
-        move_group = self.move_group
-
-        ## BEGIN_SUB_TUTORIAL plan_to_joint_state
-        ##
-        ## Planning to a Joint Goal
-        ## ^^^^^^^^^^^^^^^^^^^^^^^^
-        ## The Panda's zero configuration is at a `singularity <https://www.quora.com/Robotics-What-is-meant-by-kinematic-singularity>`_, so the first
-        ## thing we want to do is move it to a slightly better configuration.
-        ## We use the constant `tau = 2*pi <https://en.wikipedia.org/wiki/Turn_(angle)#Tau_proposals>`_ for convenience:
-        # We get the joint values from the group and change some of the values:
-        joint_goal = move_group.get_current_joint_values()
-        joint_goal[0] = 0
-        joint_goal[1] = -tau / 8
-        joint_goal[2] = 0
-        joint_goal[3] = -tau / 4
-        joint_goal[4] = 0
-        joint_goal[5] = tau / 6  # 1/6 of a turn
-        # joint_goal[6] = 0
-
-        move_group.go(joint_goal, wait=True)
-
-        move_group.stop()
-
-        current_joints = move_group.get_current_joint_values()
-        return all_close(joint_goal, current_joints, 0.01)
-
-    def go_to_pose_goal(self):
-        move_group = self.move_group
-
-        pose_goal = geometry_msgs.msg.Pose()
-        pose_goal.orientation.w = 90.0
-        pose_goal.position.x = 0.4
-        pose_goal.position.y = 0.1
-        pose_goal.position.z = 0.4
-
-        move_group.set_pose_target(pose_goal)
-        success = move_group.go(wait=True)
-        move_group.stop()
-        move_group.clear_pose_targets()
-
-        current_pose = self.move_group.get_current_pose().pose
-        return all_close(pose_goal, current_pose, 0.01)
-
-    def plan_cartesian_path(self, scale=1):
-        # Copy class variables to local variables to make the web tutorials more clear.
-        # In practice, you should use the class variables directly unless you have a good
-        # reason not to.
-        move_group = self.move_group
-
-        waypoints = []
-
-        wpose = move_group.get_current_pose().pose
-        wpose.position.z -= scale * 0.1  # First move up (z)
-        wpose.position.y += scale * 0.2  # and sideways (y)
-        waypoints.append(copy.deepcopy(wpose))
-
-        wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-        waypoints.append(copy.deepcopy(wpose))
-
-        wpose.position.y -= scale * 0.1  # Third move sideways (y)
-        waypoints.append(copy.deepcopy(wpose))
-
-        (plan, fraction) = move_group.compute_cartesian_path(
-            waypoints, 0.01, 0.0  # waypoints to follow  # eef_step
-        )  # jump_threshold
-
-        return plan, fraction
-
-
-    def execute_plan(self, plan):
-        move_group = self.move_group
-
-        move_group.execute(plan, wait=True)
-
-
 def main():
     N_corners = 6
     grid_d = 0.01
@@ -258,7 +177,10 @@ def main():
         input(
             "============ Press `Enter` to start the moveit_commander ..."
         )
-        tutorial = AcquisitionInterface()
+        moveit_commander.roscpp_initialize(sys.argv)
+        rospy.init_node("robotControl", anonymous=True)
+
+        tutorial = AcquisitionControl()
 
         load_corners = input(
             "============ Use previously stored corners?(Y/N)"
