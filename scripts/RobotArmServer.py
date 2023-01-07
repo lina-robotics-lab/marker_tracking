@@ -4,15 +4,12 @@ import roslib
 roslib.load_manifest('eye_tracking_server')
 import rospy
 import actionlib
-from robotControl import AcquisitionControl
+from controller import AcquisitionControl
 
 import pickle as pkl
 import numpy as np
 import copy
 
-
-
-# sys.path.append('../utils/')
 
 from region import AcquisitionRegion
 
@@ -28,8 +25,10 @@ class GoToServer:
     # Initialize the waypoints to go to.
 
     # Assume the corners are already stored.
-    with open('../data/corners.pkl','rb') as f:
-      corners = pkl.load(f)
+    fn = input('Please input the path to the .pkl file storing the corners:')
+    with open(fn,'rb') as f:
+        corners = pkl.load(f)
+    print('Corner coordinates are loaded from {}'.format(fn))
 
     corner_pos = np.array([[c.position.x,c.position.y,c.position.z] for c in corners])
     aq_region = AcquisitionRegion(corner_pos)

@@ -54,9 +54,8 @@ import geometry_msgs.msg
 import pickle as pkl
 import numpy as np
 
-sys.path.append('../utils/')
-
 from region import AcquisitionRegion
+from controller import AcquisitionControl
 
 try:
     from math import pi, tau, dist, fabs, cos
@@ -105,67 +104,8 @@ def all_close(goal, actual, tolerance):
     return True
 
 
-class AcquisitionControl(object):
-    """AcquisitionControl"""
-
-    def __init__(self):
-        super(AcquisitionControl
-, self).__init__()
-
-        ## BEGIN_SUB_TUTORIAL setup
-        ##
-        ## First initialize `moveit_commander`_ and a `rospy`_ node:
-        
-        ## Instantiate a `RobotCommander`_ object. Provides information such as the robot's
-        ## kinematic model and the robot's current joint states
-        robot = moveit_commander.RobotCommander()
-
-        ## Instantiate a `PlanningSceneInterface`_ object.  This provides a remote interface
-        ## for getting, setting, and updating the robot's internal understanding of the
-        ## surrounding world:
-        scene = moveit_commander.PlanningSceneInterface()
-
-        ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
-        ## to a planning group (group of joints).  In this tutorial the group is the primary
-        ## arm joints in the Panda robot, so we set the group's name to "panda_arm".
-        ## If you are using a different robot, change this value to the name of your robot
-        ## arm planning group.
-        ## This interface can be used to plan and execute motions:
-        group_name = "manipulator"
-        move_group = moveit_commander.MoveGroupCommander(group_name)
-
-        ## BEGIN_SUB_TUTORIAL basic_info
-        ##
-        ## Getting Basic Information
-        ## ^^^^^^^^^^^^^^^^^^^^^^^^^
-        # We can get the name of the reference frame for this robot:
-        planning_frame = move_group.get_planning_frame()
-        print("============ Planning frame: %s" % planning_frame)
-
-        # We can also print the name of the end-effector link for this group:
-        eef_link = move_group.get_end_effector_link()
-        print("============ End effector link: %s" % eef_link)
-
-        # We can get a list of all the groups in the robot:
-        group_names = robot.get_group_names()
-        print("============ Available Planning Groups:", robot.get_group_names())
-
-        print("============ Printing end factor pose")
-        print(move_group.get_current_pose().pose)
-        print("")
-
-        # Misc variables
-        self.box_name = ""
-        self.robot = robot
-        self.scene = scene
-        self.move_group = move_group
-        self.planning_frame = planning_frame
-        self.eef_link = eef_link
-        self.group_names = group_names
-
 def main():
     N_corners = 8
-    grid_d = 0.01
     corners = []
     try:
         print("")
@@ -186,8 +126,10 @@ def main():
             "============ Use previously stored corners?(Y/N)"
         )
         if load_corners in['Y','y']:
-            with open('../data/corners.pkl','rb') as f:
+            fn = input('Please input the path to the .pkl file storing the corners:')
+            with open(fn,'rb') as f:
                 corners = pkl.load(f)
+            print('Corner coordinates are loaded from {}'.format(fn))
         else:
             for i in range(N_corners):
                 while True:
@@ -207,12 +149,20 @@ def main():
                         print('============ Corner {} recorded.'.format(i))
                         break
 
-            with open('../data/corners.pkl','wb') as f:
+            fn = input('Please input the path to the .pkl file to save the corners:')
+            
+            with open(fn,'wb') as f:
                 pkl.dump(corners,f)
+
+            print('Corner coordinates are saved to {}'.format(fn))
 
 
         corner_pos = np.array([[c.position.x,c.position.y,c.position.z] for c in corners])
 
+
+        grid_d = float(input('Please input the distance between grid points in meters(decimal numbers accepted):'))
+        print('Generating grid waypoints')
+        
         aq_region = AcquisitionRegion(corner_pos)
         grid = aq_region.grid(grid_d)
 
@@ -224,7 +174,8 @@ def main():
             waypoints[i].position.x = grid[i,0]
             waypoints[i].position.y = grid[i,1]
             waypoints[i].position.z = grid[i,2]  
-               
+       
+        print('Waypoint generation done. {} waypoints are generated.'.format(len(waypoints)))
 
         move_group = tutorial.move_group
         for i in range(len(waypoints)):
@@ -234,7 +185,7 @@ def main():
             move_group.stop()
 
 
-        print("============ Python tutorial demo complete!")
+        print("============ All waypoints are visited! The program is completed.")
     except rospy.ROSInterruptException:
         return
     except KeyboardInterrupt:
