@@ -107,6 +107,7 @@ def all_close(goal, actual, tolerance):
 def main():
     N_corners = 8
     corners = []
+    corner_joint_values = []
     try:
         print("")
         print("----------------------------------------------------------")
@@ -140,19 +141,21 @@ def main():
                         "============ Press `Enter` when finished..."
                     )
                     P = tutorial.move_group.get_current_pose().pose
+                    S = tutorial.move_group.get_current_joint_values()
                     print("============ End Factor Pose:")
                     print("{}".format(P))
 
                     go_next=input("============ Record this as corner {}?(Y/N)".format(i))
                     if go_next in ['Y','y']:
                         corners.append(P)
+                        corner_joint_values.append(S)
                         print('============ Corner {} recorded.'.format(i))
                         break
 
             fn = input('Please input the path to the .pkl file to save the corners:')
             
             with open(fn,'wb') as f:
-                pkl.dump(corners,f)
+                pkl.dump({'corner_poses':corners,'corner_joint_values':corner_joint_values},f)
 
             print('Corner coordinates are saved to {}'.format(fn))
 
@@ -179,10 +182,19 @@ def main():
 
         move_group = tutorial.move_group
         for i in range(len(waypoints)):
-            input("============ Press `Enter` to move to waypoint {}.".format(i))
-            move_group.set_pose_target(waypoints[i])
-            success = move_group.go(wait=True)
-            move_group.stop()
+            back = input("============ Press `Enter` to move to waypoint {}.".format(i))
+            if back == 'b':
+                move_group.go(corner_joint_values[0], wait=True)
+                move_group.stop()
+            else:
+                curr_pose = move_group.get_current_pose().pose
+                target_pose = copy.deepcopy(curr_pose)
+
+                target_pose.position = waypoints[i].position
+
+                plan,_ = move_group.compute_cartesian_path([curr_pose,target_pose],0.01,0)
+                move_group.execute(plan,wait=True)
+                move_group.stop()
 
 
         print("============ All waypoints are visited! The program is completed.")

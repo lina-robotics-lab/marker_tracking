@@ -27,8 +27,10 @@ class GoToServer:
     # Assume the corners are already stored.
     fn = input('Please input the path to the .pkl file storing the corners:')
     with open(fn,'rb') as f:
-        corners = pkl.load(f)
+        data = pkl.load(f)
+        corners = data['corner_poses']
     print('Corner coordinates are loaded from {}'.format(fn))
+    print(corners)
 
     corner_pos = np.array([[c.position.x,c.position.y,c.position.z] for c in corners])
     aq_region = AcquisitionRegion(corner_pos)
@@ -69,8 +71,16 @@ class GoToServer:
     if idx>=len(self.waypoints):
       self.server.set_aborted()
     else:
-      move_group.set_pose_target(self.waypoints[idx])
-      success = move_group.go(wait=True)
+      # move_group.set_pose_target(self.waypoints[idx])
+      # success = move_group.go(wait=True)
+      
+      curr_pose = move_group.get_current_pose().pose
+      target_pose = copy.deepcopy(curr_pose)
+      
+      target_pose.position = self.waypoints[idx].position
+
+      plan,_ = move_group.compute_cartesian_path([curr_pose,target_pose],0.01,0)
+      success=move_group.execute(plan,wait=True)
       move_group.stop()
 
       if success:
@@ -80,6 +90,6 @@ class GoToServer:
 
 if __name__ == '__main__':
   rospy.init_node('GoToServer')
-  grid_d = 0.05
+  grid_d = 0.04
   server = GoToServer(grid_d)
   rospy.spin()
