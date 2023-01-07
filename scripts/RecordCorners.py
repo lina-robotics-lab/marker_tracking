@@ -129,7 +129,9 @@ def main():
         if load_corners in['Y','y']:
             fn = input('Please input the path to the .pkl file storing the corners:')
             with open(fn,'rb') as f:
-                corners = pkl.load(f)
+                data = pkl.load(f)
+            corners = data['corner_poses']
+            corner_joint_values = data['corner_joint_values']
             print('Corner coordinates are loaded from {}'.format(fn))
         else:
             for i in range(N_corners):
@@ -181,12 +183,13 @@ def main():
         print('Waypoint generation done. {} waypoints are generated.'.format(len(waypoints)))
 
         move_group = tutorial.move_group
+        onepass=input("============ Pass through all waypoints nonstop?(Y/N)".format(i))
         for i in range(len(waypoints)):
-            back = input("============ Press `Enter` to move to waypoint {}.".format(i))
-            if back == 'b':
-                move_group.go(corner_joint_values[0], wait=True)
-                move_group.stop()
+            if onepass in ['Y','y']:
+                back = ''
             else:
+                back = input("============ Press `Enter` to move to waypoint {}.".format(i))
+            if back == '':
                 curr_pose = move_group.get_current_pose().pose
                 target_pose = copy.deepcopy(curr_pose)
 
@@ -194,6 +197,10 @@ def main():
 
                 plan,_ = move_group.compute_cartesian_path([curr_pose,target_pose],0.01,0)
                 move_group.execute(plan,wait=True)
+                move_group.stop()
+                print('Waypoint {} reached.'.format(i))
+            elif int(back) in list(range(len(corner_joint_values))):
+                move_group.go(corner_joint_values[int(back)], wait=True)
                 move_group.stop()
 
 
