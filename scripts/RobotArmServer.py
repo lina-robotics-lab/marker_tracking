@@ -19,6 +19,24 @@ from eye_tracking_server.msg import GoToAction
 from eye_tracking_server.srv import nbOfPosition,nbOfPositionResponse
 
 
+# Modules required by the get_key() function, used in the manual mode.
+import os
+import select
+import sys
+import termios
+import tty
+
+def get_key(settings):
+  tty.setraw(sys.stdin.fileno())
+  rlist, _, _ = select.select([sys.stdin], [], [], 0.1)
+  if rlist:
+    key = sys.stdin.read(1)
+  else:
+    key = ''
+
+  termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
+  return key
+
 class GoToServer:
   def __init__(self,grid_d):
     
@@ -47,6 +65,7 @@ class GoToServer:
 
     self.waypoints = waypoints
     self.initial_wp = initial_wp  
+    self.corners = corners
 
     # Initialized the robot controller
     self.controller = AcquisitionControl()
@@ -59,37 +78,123 @@ class GoToServer:
     # Initialize the number of locations server.
     s = rospy.Service('nbOfPosition', nbOfPosition, self.handle_nbOfPosition)
 
+    # Initialize the system settings required by get_key()
+    self.key_settings = termios.tcgetattr(sys.stdin)
+
+    self.manual_control_on = False
+
+  def spin(self):
+    self.stop()
+    input('Press Enter to start the server.')
+    print('Server started. Press "m" to enter manual mode. Press Ctrl+C to shutdown the server.')    
+    while(1):
+      key = get_key(self.key_settings)
+      if key=='m':
+        self.stop()
+        print('Stopping the robot and entering manual control.')
+        self.manual_control_on = True
+        self.manual_control()
+      else:
+        if (key == '\x03'):
+          self.stop()
+          break
+  def manual_control(self):
+    '''
+      The keyboard interaction interface when the server is running in manual mode.
+    '''
+    while(1):
+      command = input('Go to corner(c), waypoint(w), or exit(e) manual mode?')
+      
+      if command == 'e':
+        print('Exit manual mode. Press "m" to enter manual mode again.')
+        self.manual_control_on = False  
+        break
+      elif not command in ['c','w']:
+        print('Command {} not recognized.'.format(command))
+        
+      elif command == 'c':
+        idx = int(input('Input the index of the corner.'))
+        self.__gotocorner(idx) 
+
+      elif command == 'w':
+          idx = int(input('Input the index of the waypoint.'))
+          self.__gotowaypoint(idx)
 
   def handle_nbOfPosition(self,req):
       return nbOfPositionResponse(len(self.waypoints))
+  
+  def stop(self):
+    self.controller.move_group.stop()
+
+  def __gotopose(self,target_pose):
+    move_group = self.controller.move_group
+    curr_pose = move_group.get_current_pose().pose
+        
+    plan,_ = move_group.compute_cartesian_path([curr_pose,target_pose],0.01,0)
+    success = move_group.execute(plan,wait=True)
+    move_group.stop()
+
+    return success
+
+  def __gotowaypoint(self,idx):
+    move_group = self.controller.move_group
+    curr_pose = move_group.get_current_pose().pose
+    target_pose = copy.deepcopy(curr_pose)
+    
+    if idx<=len(self.waypoints):
+      print('Go to waypoint idx:{}'.format(idx))
+
+      target_pose.position = self.waypoints[idx].position
+      success = self.__gotopose(target_pose)
+    else:
+      print("waypoint index {} out of bounds.".format(idx))
+      success = False
+
+    return success
+
+  def __gotocorner(self,idx):
+    move_group = self.controller.move_group
+    curr_pose = move_group.get_current_pose().pose
+    target_pose = copy.deepcopy(curr_pose)
+    
+    if idx<=len(self.corners):
+      print('Go to corner idx:{}'.format(idx))
+
+      target_pose.position = self.corners[idx].position
+      success = self.__gotopose(target_pose)
+    else:
+      print("Corner index {} out of bounds.".format(idx))
+      success = False
+
+    return success
 
   def goto(self, goal):
-    idx = goal.waypoint_idx
-    move_group = self.controller.move_group
-    print('Go to idx:{}'.format(idx))
 
-    if idx>=len(self.waypoints):
+    '''
+      When the server is not running in manual mode, it accepts action requests from the client
+      through the GoTo action server.
+    '''
+    if self.manual_control_on:
+      print('Request received but currently manual control is active. Not responding.')
       self.server.set_aborted()
     else:
-      # move_group.set_pose_target(self.waypoints[idx])
-      # success = move_group.go(wait=True)
+      idx = goal.waypoint_idx
+      move_group = self.controller.move_group
       
-      curr_pose = move_group.get_current_pose().pose
-      target_pose = copy.deepcopy(curr_pose)
-      
-      target_pose.position = self.waypoints[idx].position
-
-      plan,_ = move_group.compute_cartesian_path([curr_pose,target_pose],0.01,0)
-      success=move_group.execute(plan,wait=True)
-      move_group.stop()
-
-      if success:
-        self.server.set_succeeded()
-      else:
+      if idx>=len(self.waypoints):
         self.server.set_aborted()
-
+      else:
+        # move_group.set_pose_target(self.waypoints[idx])
+        # success = move_group.go(wait=True)
+        
+        success = self.__gotowaypoint(idx)
+        if success:
+          self.server.set_succeeded()
+        else:
+          self.server.set_aborted()
+        
 if __name__ == '__main__':
   rospy.init_node('GoToServer')
   grid_d = 0.04
   server = GoToServer(grid_d)
-  rospy.spin()
+  server.spin()
