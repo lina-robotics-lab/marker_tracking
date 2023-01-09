@@ -43,10 +43,12 @@ class GoToServer:
     # Initialize the waypoints to go to.
 
     # Assume the corners are already stored.
-    fn = input('Please input the path to the .pkl file storing the corners:')
+    fn = '../data/corners.pkl' or input('Please input the path to the .pkl file storing the corners[default:../data/corners.pkl]:')
     with open(fn,'rb') as f:
         data = pkl.load(f)
         corners = data['corner_poses']
+        self.corner_joint_values = data['corner_joint_values']
+
     print('Corner coordinates are loaded from {}'.format(fn))
     print(corners)
 
@@ -86,7 +88,7 @@ class GoToServer:
   def spin(self):
     self.stop()
     input('Press Enter to start the server.')
-    print('Server started. Press "m" to enter manual mode. Press Ctrl+C to shutdown the server.')    
+    print('The application is now running in server mode. Press "m" to enter manual mode. Press Ctrl+C to shutdown the server.')    
     while(1):
       key = get_key(self.key_settings)
       if key=='m':
@@ -106,7 +108,7 @@ class GoToServer:
       command = input('Go to corner(c), waypoint(w), or exit(e) manual mode?')
       
       if command == 'e':
-        print('Exit manual mode. Press "m" to enter manual mode again.')
+        print('Exit manual mode and resuming server mode. Press "m" to enter manual mode again.')
         self.manual_control_on = False  
         break
       elif not command in ['c','w']:
@@ -159,6 +161,8 @@ class GoToServer:
     
     if idx<=len(self.corners):
       print('Go to corner idx:{}'.format(idx))
+      
+      # success = move_group.go(self.corner_joint_values[idx], wait=True)
 
       target_pose.position = self.corners[idx].position
       success = self.__gotopose(target_pose)
