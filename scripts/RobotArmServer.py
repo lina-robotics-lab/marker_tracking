@@ -75,6 +75,8 @@ class GoToServer:
     self.initial_wp = initial_wp  
     self.corners = corners
 
+    print('Total waypoints:{}'.format(len(self.waypoints)))
+
     # Initialized the robot controller
     self.controller = AcquisitionControl()
     
@@ -189,7 +191,7 @@ class GoToServer:
     move_group = self.controller.move_group
     
     if idx<=len(self.waypoints):
-      print('Go to waypoint idx:{}'.format(idx))
+      print('Go to waypoint idx:{}/{}'.format(idx,len(self.waypoints)))
 
       target_pose = self.waypoints[idx]
       success = self.__gotopose(target_pose)
@@ -203,7 +205,7 @@ class GoToServer:
     move_group = self.controller.move_group
     
     if idx<=len(self.corners):
-      print('Go to corner idx:{}'.format(idx))
+      print('Go to corner idx:{}/{}'.format(idx,len(self.corners)))
       
       # success = move_group.go(self.corner_joint_values[idx], wait=True)
 
@@ -347,6 +349,6 @@ class GoToServer:
       ## END_SUB_TUTORIAL
 if __name__ == '__main__':
   rospy.init_node('GoToServer')
-  grid_d = 0.04
+  grid_d = 0.025
   server = GoToServer(grid_d)
   server.spin()
