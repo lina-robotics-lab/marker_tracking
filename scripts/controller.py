@@ -54,9 +54,12 @@ class AcquisitionControl(object):
         print("")
 
         # Misc variables
-        self.box_name = ""
+        self.box_name = "tablet"
         self.robot = robot
         self.move_group = move_group
         self.planning_frame = planning_frame
         self.eef_link = eef_link
         self.group_names = group_names
+
+        self.scene = moveit_commander.PlanningSceneInterface()
+        self.robot = moveit_commander.RobotCommander()
