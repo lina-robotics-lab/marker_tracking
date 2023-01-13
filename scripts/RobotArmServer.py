@@ -254,6 +254,9 @@ class GoToServer:
         box_pose = geometry_msgs.msg.PoseStamped()
         box_pose.header.frame_id = self.controller.planning_frame
         box_pose.pose = self.controller.move_group.get_current_pose().pose
+
+        box_pose.pose.position.y = box_pose.pose.position.y - 0.05 # This is to place the tablet a few centimeters away from the actual flange.
+        
         scene.add_box(box_name, box_pose, size=(1.0, 1.0, 0.02))
 
         self.box_name = box_name
