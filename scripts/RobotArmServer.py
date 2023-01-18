@@ -255,10 +255,17 @@ class GoToServer:
         box_pose.header.frame_id = self.controller.planning_frame
         box_pose.pose = self.controller.move_group.get_current_pose().pose
 
-        box_pose.pose.position.y = box_pose.pose.position.y - 0.05 # This is to place the tablet a few centimeters away from the actual flange.
-        
-        scene.add_box(box_name, box_pose, size=(1.0, 1.0, 0.02))
+        ############### The far corners configuration ###############
+        # TODO: A thicker box with a smaller face
+        box_pose.pose.position.y = box_pose.pose.position.y - 0.05         
+        scene.add_box(box_name, box_pose, size=(0.5, 0.5, 0.02))
 
+
+        ############## The close corners configuration###############
+        # box_pose.pose.position.y = box_pose.pose.position.y - 0.05 # This is to place the tablet a few centimeters away from the actual flange.        
+        # scene.add_box(box_name, box_pose, size=(0.5, 0.5, 0.02))
+
+        
         self.box_name = box_name
         return self.wait_for_state_update(box_is_known=True, timeout=timeout)
   def add_table(self, timeout=4):
