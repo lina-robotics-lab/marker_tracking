@@ -41,4 +41,8 @@ Alternatively,
   $ python3 RobotArmServer.py
 ```
 
-Then the server will be up and ready to receive requests from the client.
+Then the application will be up and ready to receive requests from the client.
+
+The application can operate under two modes: server mode and manual mode. By default, the application will be running in server mode. Under this mode, the application only serves as a server that interacts with the client via ROS. 
+
+By pressing 'm' in server mode, the application will switch to manual mode. Under this mode, the application no longer accepts requests from the client, but directly interacts with the user via keyboard commands. Follow the prompt to control the robot to go to different waypoints or corners. Press 'e' to exit the manual mode and return to server mode.
