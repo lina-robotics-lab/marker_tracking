@@ -105,7 +105,6 @@ def all_close(goal, actual, tolerance):
 
 
 def main():
-    N_corners = 8
     corners = []
     corner_joint_values = []
     try:
@@ -134,6 +133,8 @@ def main():
             corner_joint_values = data['corner_joint_values']
             print('Corner coordinates are loaded from {}'.format(fn))
         else:
+            N_corners = int(input('=========== Please input the number of corners:'))
+                        
             for i in range(N_corners):
                 while True:
                     print(
@@ -155,9 +156,14 @@ def main():
                         break
 
             fn = input('Please input the path to the .pkl file to save the corners:')
-            
-            with open(fn,'wb') as f:
-                pkl.dump({'corner_poses':corners,'corner_joint_values':corner_joint_values},f)
+            while(True):
+                try:
+                    with open(fn,'wb') as f:
+                        pkl.dump({'corner_poses':corners,'corner_joint_values':corner_joint_values},f)
+                    
+                    break
+                except:
+                    print('An error occurs during saving, please try again.')
 
             print('Corner coordinates are saved to {}'.format(fn))
 

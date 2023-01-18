@@ -71,6 +71,7 @@ class GoToServer:
         waypoints[i].position.y = grid[i,1]
         waypoints[i].position.z = grid[i,2]   
 
+    waypoints = corners + waypoints
     self.waypoints = waypoints
     self.initial_wp = initial_wp  
     self.corners = corners
@@ -258,7 +259,7 @@ class GoToServer:
         ############### The far corners configuration ###############
         # TODO: A thicker box with a smaller face
         box_pose.pose.position.y = box_pose.pose.position.y - 0.05         
-        scene.add_box(box_name, box_pose, size=(0.5, 0.5, 0.02))
+        scene.add_box(box_name, box_pose, size=(0.3, 0.25, 0.02))
 
 
         ############## The close corners configuration###############
@@ -298,6 +299,9 @@ class GoToServer:
 
       touch_links = ['wrist_1_link','wrist_2_link','wrist_3_link'] 
       # The box is allowed to touch the three wrist links, and not allowed to touch the remaining links, like forarm_link
+      
+
+      # touch_links = [] # The box is not allowed to touch any links.
       scene.attach_box(eef_link, box_name, touch_links=touch_links)
 
       return self.wait_for_state_update(
@@ -359,6 +363,6 @@ class GoToServer:
       ## END_SUB_TUTORIAL
 if __name__ == '__main__':
   rospy.init_node('GoToServer')
-  grid_d = 0.025
+  grid_d = 0.045
   server = GoToServer(grid_d)
   server.spin()
