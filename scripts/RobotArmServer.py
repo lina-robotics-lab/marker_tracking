@@ -249,6 +249,8 @@ class GoToServer:
         box_name = self.controller.box_name
         scene = self.controller.scene
 
+        drive_name = 'drive'
+
         ## Adding Objects to the Planning Scene
         ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         ## First, we will create a box in the planning scene between the fingers:
@@ -256,10 +258,24 @@ class GoToServer:
         box_pose.header.frame_id = self.controller.planning_frame
         box_pose.pose = self.controller.move_group.get_current_pose().pose
 
+        ## Add the drive box
+        drive_pose = geometry_msgs.msg.PoseStamped()
+        drive_pose.header.frame_id = self.controller.planning_frame
+        drive_pose.pose = self.controller.move_group.get_current_pose().pose
+
+
         ############### The far corners configuration ###############
-        # TODO: A thicker box with a smaller face
-        box_pose.pose.position.y = box_pose.pose.position.y - 0.05         
+        box_pose.pose.position.y = box_pose.pose.position.y - 0.08    
+
+
+        drive_pose.pose.position.y = drive_pose.pose.position.y - 0.055
+        drive_pose.pose.position.z = drive_pose.pose.position.z - 0.08
+        
+
         scene.add_box(box_name, box_pose, size=(0.3, 0.25, 0.02))
+        scene.add_box(drive_name, drive_pose, size=(0.09, 0.02, 0.02))
+        
+
 
 
         ############## The close corners configuration###############
@@ -292,6 +308,7 @@ class GoToServer:
 
   def attach_box(self, timeout=4):
       box_name = self.controller.box_name
+      drive_name = 'drive'
       robot = self.controller.robot
       scene = self.controller.scene
       eef_link = self.controller.eef_link
@@ -303,6 +320,8 @@ class GoToServer:
 
       # touch_links = [] # The box is not allowed to touch any links.
       scene.attach_box(eef_link, box_name, touch_links=touch_links)
+      scene.attach_box(eef_link, drive_name, touch_links=[])
+
 
       return self.wait_for_state_update(
           box_is_attached=True, box_is_known=False, timeout=timeout
