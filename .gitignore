@@ -4,8 +4,8 @@ __pycache__/
 *$py.class
 
 # Data files
-data/
-*.pkl
+# data/
+# *.pkl
 
 # C extensions
 *.so
