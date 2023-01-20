@@ -155,8 +155,9 @@ def main():
                         print('============ Corner {} recorded.'.format(i))
                         break
 
-            fn = input('Please input the path to the .pkl file to save the corners:')
+           
             while(True):
+                fn = input('Please input the absolute path to the .pkl file to save the corners:')
                 try:
                     with open(fn,'wb') as f:
                         pkl.dump({'corner_poses':corners,'corner_joint_values':corner_joint_values},f)

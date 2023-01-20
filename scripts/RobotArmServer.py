@@ -6,6 +6,7 @@ import rospy
 import actionlib
 from controller import AcquisitionControl
 import geometry_msgs
+from time import sleep
 
 import rospkg
 PACKAGE_HOME = rospkg.RosPack().get_path('eye_tracking_server')
@@ -43,6 +44,9 @@ def get_key(settings):
   termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
   return key
 
+def pose2array(pose):
+   return np.array([pose.position.x,pose.position.y,pose.position.z])
+   
 class GoToServer:
   def __init__(self,grid_d):
     
@@ -67,8 +71,8 @@ class GoToServer:
     side_faces_path = '{}/data/side_faces.pkl'.format(PACKAGE_HOME)
     with open(side_faces_path,'rb') as f:
       side = pkl.load(f)
-
-    print(side)
+    
+    n_grid=len(grid)
     grid = np.vstack([grid,side])
 
     initial_wp = corners[0]
@@ -87,9 +91,10 @@ class GoToServer:
     self.waypoints = waypoints
     self.initial_wp = initial_wp  
     self.corners = corners
-
+    
+    print('Corners:{}, Side face points:{}, Grids:{}'.format(len(corners),len(side),n_grid))
     print('Total waypoints:{}'.format(len(self.waypoints)))
-
+	
     # Initialized the robot controller
     self.controller = AcquisitionControl()
     
@@ -197,7 +202,25 @@ class GoToServer:
     plan,_ = move_group.compute_cartesian_path([target_pose],0.01,0)
     success = move_group.execute(plan,wait=True)
     move_group.stop()
-
+    
+    # Ensure the target location is really reached.
+    try:
+    	total_tries = 10
+    	for _ in range(total_tries):
+    	     curr_pose = move_group.get_current_pose().pose
+    	     
+    	     tolerance = 0.1
+    	     
+    	     dist = np.linalg.norm(pose2array(curr_pose)-pose2array(target_pose))
+    	     print('Distance to  target pose:{}'.format(dist))
+    	     if dist<tolerance:
+    	        break
+    	     sleep(0.5)
+    	     if _ == total_tries-1:
+                print('Target not reached')   
+    except KeyboardInterrupt:
+    	print('Keyboard interrupt detected.')
+    
     return success
 
   def __gotowaypoint(self,idx):
@@ -394,6 +417,7 @@ class GoToServer:
       ## END_SUB_TUTORIAL
 if __name__ == '__main__':
   rospy.init_node('GoToServer')
-  grid_d = 0.045
+  grid_d = 0.05
+  
   server = GoToServer(grid_d)
   server.spin()
