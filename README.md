@@ -1,4 +1,4 @@
-# eye_tracking_server_server
+# eye_tracking_server
 The ROS 1 repository for automatic eye tracking acquisition using a robotic arm.
 
 # Installation
