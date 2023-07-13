@@ -16,12 +16,14 @@ import numpy as np
 import copy
 
 from moveit_msgs.msg import Constraints, OrientationConstraint
+from geometry_msgs.msg import Pose
+
 
 
 from region import AcquisitionRegion
 
 # The eye_tracking_server.msg is placed under /catkin_ws/devel/shared/eye_tracking_server/msgs
-from eye_tracking_server.msg import GoToAction
+from eye_tracking_server.msg import GoToAction, GoToPoseAction
 
 from eye_tracking_server.srv import nbOfPosition,nbOfPositionResponse
 
@@ -103,7 +105,7 @@ class GoToServer:
 
     # Initialize the action server.
 
-    self.server = actionlib.SimpleActionServer('GoTo', GoToAction, self.goto, False)
+    self.server = actionlib.SimpleActionServer('GoTo', GoToPoseAction, self.goto, False)
     self.server.start()
 
     # Initialize the number of locations server.
@@ -264,20 +266,26 @@ class GoToServer:
       print('Request received but currently manual control is active. Not responding.')
       self.server.set_aborted()
     else:
-      idx = goal.waypoint_idx
       move_group = self.controller.move_group
+      pose_goal = Pose()
+      pose_goal.position.x = goal.position_x
+      pose_goal.position.y = goal.position_y
+      pose_goal.position.z = goal.position_z
+      pose_goal.orientation.x = goal.orientation_x
+      pose_goal.orientation.y = goal.orientation_y
+      pose_goal.orientation.z = goal.orientation_z
+      pose_goal.orientation.w = goal.orientation_w
+
+      move_group.set_pose_target(pose_goal)
+      plan_results = move_group.plan()
+      print('plan_successful: {}'.format(plan_results[0]))
+      success = move_group.execute(plan_results[1], wait=True)
+      # success = move_group.go(wait=True)
       
-      if idx>=len(self.waypoints):
-        self.server.set_aborted()
+      if success:
+        self.server.set_succeeded()
       else:
-        # move_group.set_pose_target(self.waypoints[idx])
-        # success = move_group.go(wait=True)
-        
-        success = self.__gotowaypoint(idx)
-        if success:
-          self.server.set_succeeded()
-        else:
-          self.server.set_aborted()
+        self.server.set_aborted()
 
           
   def add_box(self, timeout=4):
@@ -419,7 +427,7 @@ class GoToServer:
       return False
       ## END_SUB_TUTORIAL
 if __name__ == '__main__':
-  rospy.init_node('GoToServer')
+  rospy.init_node('GoToGoalPoseServer')
   grid_d = 0.05
   
   server = GoToServer(grid_d)

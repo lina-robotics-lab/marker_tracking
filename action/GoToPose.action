@@ -1,0 +1,14 @@
+# Define the index of the waypoint to go to.
+float64 position_x
+float64 position_y
+float64 position_z
+float64 orientation_x
+float64 orientation_y
+float64 orientation_z
+float64 orientation_w
+---
+# Define the success/failure of going to the waypoint.
+bool waypoint_reached
+---
+# Define the dummy feedback information, which is the current waypoint_idx, required by the action library.
+bool current_status
