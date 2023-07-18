@@ -1,10 +1,12 @@
-# Python 2/3 compatibility imports
+#! /usr/bin/env python
 from __future__ import print_function
 
 import moveit_commander
 import geometry_msgs.msg
 
 import numpy as np
+
+
 
 
 try:
@@ -63,3 +65,10 @@ class AcquisitionControl(object):
 
         self.scene = moveit_commander.PlanningSceneInterface()
         self.robot = moveit_commander.RobotCommander()
+
+if __name__ == '__main__':
+    import rospy
+    rospy.init_node('get_pose')
+    controller = AcquisitionControl()
+    while True:
+        print(controller.move_group.get_current_pose().pose)

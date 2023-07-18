@@ -84,7 +84,7 @@ class GoToServer:
     for i in range(len(grid)):
         waypoints[i].position.x = grid[i,0]
         waypoints[i].position.y = grid[i,1]
-        waypoints[i].position.z = grid[i,2]   
+        waypoints[i].position.z = grid[i,2]  
 
 
     waypoints = corners + waypoints
@@ -117,8 +117,8 @@ class GoToServer:
     self.manual_control_on = False
 
     # Adding the box representing the tablet.
-    self.add_box()
-    self.attach_box()
+    # self.add_box()
+    # self.attach_box()
     self.add_table()
 
 
@@ -168,22 +168,17 @@ class GoToServer:
       The keyboard interaction interface when the server is running in manual mode.
     '''
     while(1):
-      command = input('Go to corner(c), waypoint(w), or exit(e) manual mode?')
+      command = input('Move down (d), or exit(e) manual mode?')
       
       if command == 'e':
         print('Exit manual mode and resuming server mode. Press "m" to enter manual mode again.')
         self.manual_control_on = False  
         break
-      elif not command in ['c','w']:
+      elif not command in ['d']:
         print('Command {} not recognized.'.format(command))
         
-      elif command == 'c':
-        idx = int(input('Input the index of the corner.'))
-        self.__gotocorner(idx) 
-
-      elif command == 'w':
-          idx = int(input('Input the index of the waypoint.'))
-          self.__gotowaypoint(idx)
+      elif command == 'd':
+        self.move_down()
 
   def handle_nbOfPosition(self,req):
       return nbOfPositionResponse(len(self.waypoints))
@@ -255,6 +250,30 @@ class GoToServer:
       success = False
 
     return success
+  
+  def move_down(self):
+    # in manual mode
+    move_group = self.controller.move_group
+    current_pose = self.controller.move_group.get_current_pose().pose
+    current_pose.position.z -= 0.05
+    move_group.set_pose_target(current_pose)
+    plan_results = move_group.plan()
+    print('plan_successful: {}'.format(plan_results[0]))
+    keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
+    if keys == "":
+      success = move_group.execute(plan_results[1], wait=True)
+    # elif input == "r":
+    #   move_group.
+    elif keys == "a":
+      success = False
+    # success = move_group.go(wait=True)
+    
+    if success:
+      self.server.set_succeeded()
+    else:
+      self.server.set_aborted()
+
+     
 
   def goto(self, goal):
 
@@ -279,7 +298,13 @@ class GoToServer:
       move_group.set_pose_target(pose_goal)
       plan_results = move_group.plan()
       print('plan_successful: {}'.format(plan_results[0]))
-      success = move_group.execute(plan_results[1], wait=True)
+      keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
+      if keys == "":
+        success = move_group.execute(plan_results[1], wait=True)
+      # elif input == "r":
+      #   move_group.
+      elif keys == "a":
+        success = False
       # success = move_group.go(wait=True)
       
       if success:
@@ -311,15 +336,15 @@ class GoToServer:
 
 
         ############### The far corners configuration ###############
-        box_pose.pose.position.y = box_pose.pose.position.y - 0.08    
+        box_pose.pose.position.y = box_pose.pose.position.y # + 0.08    
 
 
         drive_pose.pose.position.y = drive_pose.pose.position.y - 0.055
         drive_pose.pose.position.z = drive_pose.pose.position.z - 0.08
         
 
-        scene.add_box(box_name, box_pose, size=(0.3, 0.25, 0.02))
-        scene.add_box(drive_name, drive_pose, size=(0.09, 0.02, 0.02))
+        scene.add_box(box_name, box_pose, size=(0.3, 0.25, 0.2))
+        # scene.add_box(drive_name, drive_pose, size=(0.09, 0.02, 0.02))
         
 
 
@@ -366,7 +391,7 @@ class GoToServer:
 
       # touch_links = [] # The box is not allowed to touch any links.
       scene.attach_box(eef_link, box_name, touch_links=touch_links)
-      scene.attach_box(eef_link, drive_name, touch_links=[])
+      # scene.attach_box(eef_link, drive_name, touch_links=[])
 
 
       return self.wait_for_state_update(
