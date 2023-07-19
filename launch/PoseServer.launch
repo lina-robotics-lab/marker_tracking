@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="RobotArmGoalPoseServer" pkg="eye_tracking_server" type="RobotArmGoalPoseServer.py" respawn="false" output="screen">
+  </node>
+  <node name="goal_listener" pkg="eye_tracking_server" type="goal_listener.py" respawn="false" output="screen">
+  </node>
+  <node name="pose_publisher" pkg="eye_tracking_server" type="pose_publisher.py" respawn="false" output="screen">
+  </node>
+
+</launch>

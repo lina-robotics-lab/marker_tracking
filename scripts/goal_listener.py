@@ -27,7 +27,7 @@ def start_listen_goal_and_publish():
         goal.orientation_w = goal_pose.orientation.w
         client.send_goal(goal)
         client.wait_for_result()
-        print(client.get_result)
+        print(client.get_result())
 
 if __name__ == '__main__':
     start_listen_goal_and_publish()

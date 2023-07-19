@@ -167,18 +167,17 @@ class GoToServer:
     '''
       The keyboard interaction interface when the server is running in manual mode.
     '''
+    print('Move down (d), or exit(e) manual mode?')
     while(1):
-      command = input('Move down (d), or exit(e) manual mode?')
-      
+      command = get_key(self.key_settings)
       if command == 'e':
         print('Exit manual mode and resuming server mode. Press "m" to enter manual mode again.')
         self.manual_control_on = False  
         break
-      elif not command in ['d']:
+      elif not command in ['d', '']:
         print('Command {} not recognized.'.format(command))
-        
       elif command == 'd':
-        self.move_down()
+        success = self.move_down()
 
   def handle_nbOfPosition(self,req):
       return nbOfPositionResponse(len(self.waypoints))
@@ -255,23 +254,21 @@ class GoToServer:
     # in manual mode
     move_group = self.controller.move_group
     current_pose = self.controller.move_group.get_current_pose().pose
-    current_pose.position.z -= 0.05
+    print(current_pose)
+    current_pose.position.z += 0.05
     move_group.set_pose_target(current_pose)
-    plan_results = move_group.plan()
-    print('plan_successful: {}'.format(plan_results[0]))
-    keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
-    if keys == "":
-      success = move_group.execute(plan_results[1], wait=True)
-    # elif input == "r":
-    #   move_group.
-    elif keys == "a":
-      success = False
-    # success = move_group.go(wait=True)
+    # plan_results = move_group.plan()
+    # print('plan_successful: {}'.format(plan_results[0]))
+    # keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
+    # if keys == "":
+    #   success = move_group.execute(plan_results[1], wait=True)
+    # # elif input == "r":
+    # #   move_group.
+    # elif keys == "a":
+    #   success = False
+    success = move_group.go(wait=True)
     
-    if success:
-      self.server.set_succeeded()
-    else:
-      self.server.set_aborted()
+    return success
 
      
 
