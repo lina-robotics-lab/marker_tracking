@@ -13,7 +13,7 @@ def start_listen_goal_and_publish():
     rospy.init_node('GoalLister')
     client = actionlib.SimpleActionClient('GoTo', GoToPoseAction)
     client.wait_for_server()
-    print("Server ready")
+    rospy.loginfo("Action server ready")
     while True:
         goal_pose = rospy.wait_for_message('robot_arm_goal', Pose, timeout=30.)
         print("I heared {}".format(goal_pose))
