@@ -17,6 +17,7 @@ def start_listen_goal_and_publish():
                 goal_pose = rospy.wait_for_message('robot_arm_goal', Pose, timeout=30.)
             except:
                 rospy.loginfo("no goal received in 30 sec.")
+                continue
             print("I heared {}".format(goal_pose))
             goal = GoToPoseGoal()
             goal.position_x = goal_pose.position.x
@@ -30,7 +31,7 @@ def start_listen_goal_and_publish():
             client.wait_for_result()
             print(client.get_result())
         except KeyboardInterrupt:
-            pass
+            break
 
 if __name__ == '__main__':
     start_listen_goal_and_publish()
