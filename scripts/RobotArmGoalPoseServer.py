@@ -117,8 +117,8 @@ class GoToServer:
     self.manual_control_on = False
 
     # Adding the box representing the tablet.
-    # self.add_box()
-    # self.attach_box()
+    self.add_box()
+    self.attach_box()
     self.add_table()
 
 
@@ -340,7 +340,7 @@ class GoToServer:
         drive_pose.pose.position.z = drive_pose.pose.position.z - 0.08
         
 
-        scene.add_box(box_name, box_pose, size=(0.3, 0.25, 0.2))
+        scene.add_box(box_name, box_pose, size=(0.1, 0.1, 0.15))
         # scene.add_box(drive_name, drive_pose, size=(0.09, 0.02, 0.02))
         
 

@@ -12,26 +12,20 @@ Clone this package to the src/ folder of your catkin workspace, then build the p
   $ catkin build eye_tracking_server
 ```
 
-# Step 1: record the corner coordinates.
+# Step 1: bring up the robot
 First, bring up the real robot or simulated robot, then run the MoveIt! interface.
 
-Source the ROS workspace, then run 
-
 ```bash
-  $ rosrun eye_tracking_server RecordCorners.py
+cd ${pkg_folder}/scripts/run_server_2.bash
 ```
-
-Follow the prompts to record the coordinates of the corners of the 3-D acquisition region.
-
+You might need to click enter three times after each time the output finishes to pop out.
 
 # Step 2: run the server.
 
-First, bring up the real robot or simulated robot, then run the MoveIt! interface.
-
 Source the ROS workspace, then run 
 
 ```bash
-  $ rosrun eye_tracking_server RobotArmServer.py
+  $ roslaunch eye_tracking_server PoseServer.bash
 ```
 
 Alternatively, 
