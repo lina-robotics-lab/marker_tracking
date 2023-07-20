@@ -2,6 +2,8 @@
 
 import rospy
 from geometry_msgs.msg import Pose
+from scipy.spatial.transform import Rotation as R
+from controller import AcquisitionControl
 
 import moveit_commander
 
@@ -36,12 +38,16 @@ import moveit_commander
 def talker():
     pub = rospy.Publisher('eef_pose', Pose, queue_size=10)
     rospy.init_node('pose_publisher', anonymous=True, disable_signals=True)
-    group_name = "manipulator"
-    move_group = moveit_commander.MoveGroupCommander(group_name)
+    controller = AcquisitionControl()
     rate = rospy.Rate(10) # 10hz
-    msg = move_group.get_current_pose().pose
     while True:
         try:
+            msg = controller.move_group.get_current_pose().pose
+            # position = [msg.position.x, msg.position.y, msg.position.z]
+            # orientation = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w]
+            # r = R.from_quat(orientation)
+            # rospy.loginfo("euler %s " % r.as_euler('zxy', degrees=True))
+            # rospy.loginfo("pos %s " % position)
             pub.publish(msg)
             rate.sleep()
         except KeyboardInterrupt:
