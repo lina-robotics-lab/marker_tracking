@@ -52,6 +52,8 @@ def pose2array(pose):
 class GoToServer:
   def __init__(self,grid_d):
     
+
+
     # Initialize the waypoints to go to.
 
     # Assume the corners are already stored.
@@ -115,6 +117,8 @@ class GoToServer:
     self.key_settings = termios.tcgetattr(sys.stdin)
 
     self.manual_control_on = False
+
+    # self.display_trajectory_publisher = display_trajectory_publisher
 
     # Adding the box representing the tablet.
     self.add_box()
@@ -293,21 +297,45 @@ class GoToServer:
       pose_goal.orientation.w = goal.orientation_w
 
       move_group.set_pose_target(pose_goal)
-      plan_results = move_group.plan()
-      print('plan_successful: {}'.format(plan_results[0]))
-      keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
-      if keys == "":
-        success = move_group.execute(plan_results[1], wait=True)
+      # plan_results = move_group.plan()
+      # print('plan_successful: {}'.format(plan_results[0]))
+      # keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
+      # if keys == "":
+      #   success = move_group.execute(plan_results[1], wait=True)
       # elif input == "r":
-      #   move_group.
-      elif keys == "a":
-        success = False
-      # success = move_group.go(wait=True)
+      #   move_group.display_trajectory()
+      # elif keys == "a":
+      #   success = False
+      success = move_group.go(wait=True)
       
       if success:
         self.server.set_succeeded()
       else:
         self.server.set_aborted()
+
+  def display_trajectory(self, plan):
+        # Copy class variables to local variables to make the web tutorials more clear.
+        # In practice, you should use the class variables directly unless you have a good
+        # reason not to.
+        robot = self.controller.robot
+        display_trajectory_publisher = self.display_trajectory_publisher
+
+        ## BEGIN_SUB_TUTORIAL display_trajectory
+        ##
+        ## Displaying a Trajectory
+        ## ^^^^^^^^^^^^^^^^^^^^^^^
+        ## You can ask RViz to visualize a plan (aka trajectory) for you. But the
+        ## group.plan() method does this automatically so this is not that useful
+        ## here (it just displays the same trajectory again):
+        ##
+        ## A `DisplayTrajectory`_ msg has two primary fields, trajectory_start and trajectory.
+        ## We populate the trajectory_start with our current robot state to copy over
+        ## any AttachedCollisionObjects and add our plan to the trajectory.
+        display_trajectory = moveit_msgs.msg.DisplayTrajectory()
+        display_trajectory.trajectory_start = robot.get_current_state()
+        display_trajectory.trajectory.append(plan)
+        # Publish
+        display_trajectory_publisher.publish(display_trajectory)
 
           
   def add_box(self, timeout=4):
@@ -340,7 +368,7 @@ class GoToServer:
         drive_pose.pose.position.z = drive_pose.pose.position.z - 0.08
         
 
-        scene.add_box(box_name, box_pose, size=(0.1, 0.1, 0.15))
+        scene.add_box(box_name, box_pose, size=(0.2, 0.2, 0.15))
         # scene.add_box(drive_name, drive_pose, size=(0.09, 0.02, 0.02))
         
 

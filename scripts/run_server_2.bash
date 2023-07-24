@@ -37,15 +37,15 @@ do
   read VAL
 done
 
-VAL=NO
-while [ $VAL != "y" ]
-do
-    (
-    source /opt/ros/noetic/setup.bash && \
-    source ~/catkin_ws/devel/setup.bash && \
-    roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=$(rospack find ur5e_moveit_config)/launch_moveit.rviz) &
-  read VAL
-done
+# VAL=NO
+# while [ $VAL != "y" ]
+# do
+#     (
+#     source /opt/ros/noetic/setup.bash && \
+#     source ~/catkin_ws/devel/setup.bash && \
+#     roslaunch ur5e_moveit_config moveit_rviz.launch rviz_config:=$(rospack find ur5e_moveit_config)/launch_moveit.rviz) &
+#   read VAL
+# done
 
 trap "pkill roslaunch; pkill roscore" EXIT
 
