@@ -15,7 +15,7 @@ import pickle as pkl
 import numpy as np
 import copy
 
-from moveit_msgs.msg import Constraints, OrientationConstraint
+from moveit_msgs.msg import Constraints, OrientationConstraint, DisplayTrajectory
 from geometry_msgs.msg import Pose
 
 
@@ -23,7 +23,7 @@ from geometry_msgs.msg import Pose
 from region import AcquisitionRegion
 
 # The eye_tracking_server.msg is placed under /catkin_ws/devel/shared/eye_tracking_server/msgs
-from eye_tracking_server.msg import GoToAction, GoToPoseAction
+from eye_tracking_server.msg import GoToPoseAction, GoToPoseActionResult
 
 from eye_tracking_server.srv import nbOfPosition,nbOfPositionResponse
 
@@ -51,78 +51,31 @@ def pose2array(pose):
    
 class GoToServer:
   def __init__(self,grid_d):
-    
-
-
-    # Initialize the waypoints to go to.
-
-    # Assume the corners are already stored.
-    fn = '{}/data/corners.pkl'.format(PACKAGE_HOME) 
-    # or input('Please input the path to the .pkl file storing the corners[default:../data/corners.pkl]:')
-    with open(fn,'rb') as f:
-        data = pkl.load(f)
-        corners = data['corner_poses']
-        self.corner_joint_values = data['corner_joint_values']
-
-    print('Corner coordinates are loaded from {}'.format(fn))
-    print(corners)
-
-    corner_pos = np.array([[c.position.x,c.position.y,c.position.z] for c in corners])
-    aq_region = AcquisitionRegion(corner_pos)
-    grid = aq_region.grid(grid_d)
-
-    # Assume the side faces are already stored.
-    side_faces_path = '{}/data/side_faces.pkl'.format(PACKAGE_HOME)
-    with open(side_faces_path,'rb') as f:
-      side = pkl.load(f)
-    
-    n_grid=len(grid)
-    grid = np.vstack([grid,side])
-
-    initial_wp = corners[0]
-    waypoints = [copy.deepcopy(initial_wp) for _ in range(len(grid))]
-    # The waypoints all have the same orientation as the first corner.
-    # The positions of the waypoints are determined by the grid variable.
-    for i in range(len(grid)):
-        waypoints[i].position.x = grid[i,0]
-        waypoints[i].position.y = grid[i,1]
-        waypoints[i].position.z = grid[i,2]  
-
-
-    waypoints = corners + waypoints
-
-
-    self.waypoints = waypoints
-    self.initial_wp = initial_wp  
-    self.corners = corners
-    
-    print('Corners:{}, Side face points:{}, Grids:{}'.format(len(corners),len(side),n_grid))
-    print('Total waypoints:{}'.format(len(self.waypoints)))
 	
     # Initialized the robot controller
     self.controller = AcquisitionControl()
-    
-
     self.scene = self.controller.scene
 
     # Initialize the action server.
-
     self.server = actionlib.SimpleActionServer('GoTo', GoToPoseAction, self.goto, False)
     self.server.start()
-
-    # Initialize the number of locations server.
-    s = rospy.Service('nbOfPosition', nbOfPosition, self.handle_nbOfPosition)
 
     # Initialize the system settings required by get_key()
     self.key_settings = termios.tcgetattr(sys.stdin)
 
     self.manual_control_on = False
 
-    # self.display_trajectory_publisher = display_trajectory_publisher
+    display_trajectory_publisher = rospy.Publisher(
+            "/move_group/display_planned_path",
+            DisplayTrajectory,
+            queue_size=20,
+        )
+
+    self.display_trajectory_publisher = display_trajectory_publisher
 
     # Adding the box representing the tablet.
-    self.add_box()
-    self.attach_box()
+    # self.add_box()
+    # self.attach_box()
     self.add_table()
 
 
@@ -165,6 +118,7 @@ class GoToServer:
       else:
         if (key == '\x03'):
           self.stop()
+          self.detach_box()
           break
 
   def manual_control(self):
@@ -200,7 +154,7 @@ class GoToServer:
     
     # self.fix_eff_orientation_in_planning()
 
-    plan,_ = move_group.compute_cartesian_path([target_pose],0.01,0)
+    plan,_ = move_group.compute_cartesian_path([target_pose],0.005,0)
     success = move_group.execute(plan,wait=True)
     move_group.stop()
     
@@ -223,36 +177,6 @@ class GoToServer:
     	print('Keyboard interrupt detected.')
     
     return success
-
-  def __gotowaypoint(self,idx):
-    move_group = self.controller.move_group
-    
-    if idx<=len(self.waypoints):
-      print('Go to waypoint idx:{}/{}'.format(idx,len(self.waypoints)))
-
-      target_pose = self.waypoints[idx]
-      success = self.__gotopose(target_pose)
-    else:
-      print("waypoint index {} out of bounds.".format(idx))
-      success = False
-
-    return success
-
-  def __gotocorner(self,idx):
-    move_group = self.controller.move_group
-    
-    if idx<=len(self.corners):
-      print('Go to corner idx:{}/{}'.format(idx,len(self.corners)))
-      
-      # success = move_group.go(self.corner_joint_values[idx], wait=True)
-
-      target_pose = self.corners[idx]
-      success = self.__gotopose(target_pose)
-    else:
-      print("Corner index {} out of bounds.".format(idx))
-      success = False
-
-    return success
   
   def move_down(self):
     # in manual mode
@@ -274,9 +198,7 @@ class GoToServer:
     
     return success
 
-     
-
-  def goto(self, goal):
+  def goto(self, goal, cartisian=True):
 
     '''
       When the server is not running in manual mode, it accepts action requests from the client
@@ -296,20 +218,51 @@ class GoToServer:
       pose_goal.orientation.z = goal.orientation_z
       pose_goal.orientation.w = goal.orientation_w
 
-      move_group.set_pose_target(pose_goal)
-      # plan_results = move_group.plan()
-      # print('plan_successful: {}'.format(plan_results[0]))
-      # keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
-      # if keys == "":
-      #   success = move_group.execute(plan_results[1], wait=True)
-      # elif input == "r":
-      #   move_group.display_trajectory()
-      # elif keys == "a":
-      #   success = False
-      success = move_group.go(wait=True)
+      success = False
+      result = GoToPoseActionResult()
+
+      if cartisian:
+        waypoints = []
+        waypoints.append(pose_goal)
+        (plan, fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
+        rospy.loginfo('planning success')
+        self.display_trajectory(plan)
+        success = move_group.execute(plan, wait=True)
+        print(plan)
+        rospy.loginfo('move_success %s' % success)
+        # print("Press g to execute the plan, or r to replay the planned path, or a to abort")
+        # while True:
+        #   key = get_key(self.key_settings)
+        #   if key == "g":
+        #     success = move_group.execute(plan, wait=True)
+        #     break
+        #   elif input == "r":
+        #     self.display_trajectory(plan)
+        #   elif key == "a":
+        #     success = False
+        #     print('Aborted')
+        #     break
+        #   else:
+        #      print('Command not recognized')
+        #      pass
+
+      else:
+        move_group.set_pose_target(pose_goal)
+        # plan_results = move_group.plan()
+        # print('plan_successful: {}'.format(plan_results[0]))
+        # keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
+        # if keys == "":
+        #   success = move_group.execute(plan_results[1], wait=True)
+        # elif input == "r":
+        #   move_group.display_trajectory()
+        # elif keys == "a":
+        #   success = False
+        success = move_group.go(wait=True)
       
       if success:
-        self.server.set_succeeded()
+        result.result.waypoint_reached = True
+        self.server.set_succeeded(result.result)
+        rospy.loginfo('set success')
       else:
         self.server.set_aborted()
 
@@ -331,7 +284,7 @@ class GoToServer:
         ## A `DisplayTrajectory`_ msg has two primary fields, trajectory_start and trajectory.
         ## We populate the trajectory_start with our current robot state to copy over
         ## any AttachedCollisionObjects and add our plan to the trajectory.
-        display_trajectory = moveit_msgs.msg.DisplayTrajectory()
+        display_trajectory = DisplayTrajectory()
         display_trajectory.trajectory_start = robot.get_current_state()
         display_trajectory.trajectory.append(plan)
         # Publish

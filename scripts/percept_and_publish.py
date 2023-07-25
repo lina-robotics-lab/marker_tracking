@@ -9,7 +9,7 @@ import sys
 import actionlib
 
 import pyrealsense2 as rs
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
@@ -35,8 +35,8 @@ distortionCoeffs = np.zeros((8), dtype=np.float32)
 # print(package_share_directory)
 # sys.path.append('~/colcon_ws/src/goal_publisher')
 
-cameraMatrix = np.load("/home/tianpeng/catkin_ws/src/eye_tracking_server/cameraMatrix.npy")
-distortionCoeffs = np.load("/home/tianpeng/catkin_ws/src/eye_tracking_server/distortions.npy")
+cameraMatrix = np.load("/home/mht/catkin_ws/src/eye_tracking_server/cameraMatrix.npy")
+distortionCoeffs = np.load("/home/mht/catkin_ws/src/eye_tracking_server/distortions.npy")
 
 ARUCO_DICT = {
                 "DICT_4X4_50": cv2.aruco.DICT_4X4_50,
@@ -457,12 +457,21 @@ if __name__ == '__main__':
                 # print(tf.transformations.concatenate_matrices(mat, M))
                 target_quat_camera = tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M))
                 t = rospy.Time.now().to_sec()
-                tf_publisher.sendTransform([0.0, -0.057, 0.046], 
+                tf_publisher.sendTransform([0.0, 0.0, 0.0], 
                                            tf.transformations.quaternion_from_matrix(np.eye(4)), 
                                            rospy.Time.now(), 'camera', 'tool0')
-                # tf_publisher.sendTransform(pointDest / 1000., 
-                #                            ,
-                #                         rospy.Time.now(), 'markers', 'camera')
+                tf_publisher.sendTransform(pointDest / 1000., 
+                                           tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M)),
+                                        rospy.Time.now(), 'target', 'camera')
+
+                for i in range(len(newMats)):
+                    # mat = np.eye(4)
+                    # mat[:3, :3] = newMats[i]
+                    print(rotationMatrix)
+                    if i % 10 == 0:
+                        tf_publisher.sendTransform(curve[i] / 1000.,
+                                                tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M)),
+                                                rospy.Time.now(), 'traj{}'.format(str(i)), 'camera')
 
                 goal = PoseStamped()
 
