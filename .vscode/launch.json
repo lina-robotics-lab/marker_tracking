@@ -7,7 +7,7 @@
         {
             "name": "ROS: Launch",
             "request": "launch",
-            "target": "/home/mht/catkin_ws/src/eye_tracking_server/launch/PoseServer.launch",
+            "target": "/home/mht/catkin_ws/src/eye_tracking_server/launch/debugger.launch",
             "launch": [
                 "rviz",
                 "gz",

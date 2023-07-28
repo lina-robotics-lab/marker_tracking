@@ -2,11 +2,13 @@
 from __future__ import print_function
 
 import moveit_commander
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose, PoseArray
+from std_msgs.msg import Header
 from eye_tracking_server.msg import GoToPoseAction, GoToPoseGoal
 from collections import deque
 
 import numpy as np
+import rospy
 
 import actionlib
 from copy import deepcopy
@@ -97,7 +99,7 @@ class RobotController(object):
     def __init__(self):
         self.i = 0
         self.client = actionlib.SimpleActionClient('GoTo', GoToPoseAction)
-        # self.client.wait_for_server()
+        self.client.wait_for_server()
         rospy.loginfo("Action server ready")
 
         self.curve = None
@@ -106,22 +108,80 @@ class RobotController(object):
         self.motion_planner = 'bezier' # bezier or moveit
 
         self.tf = tf.TransformListener(True, rospy.Duration(10.))
-        self.goal_pose_listener = rospy.Subscriber('camera/goal_pose', PoseStamped)
+        # self.goal_pose_listener = rospy.Subscriber('camera/goal_pose', PoseArray)
         
 
         self.tf.waitForTransform('tool0', 'base', time=rospy.Time(), timeout=rospy.Duration(10.))
-        print('all frames', self.tf.getFrameStrings())
+        rospy.loginfo('get all tf frames')
+        rospy.loginfo(self.tf.getFrameStrings())
 
         self.goal_pose_stack = deque(maxlen=10)
+        self.goal_pose_array = None
 
-    def goal_pose_cbk(self, data):
-        self.goal_pose_stack.append(data)
+    # def goal_pose_cbk(self, data):
+    #     self.goal_pose_stack.append(data)
 
     # def get_camera_pose(self):
     #     (translation, quaternion) = self.tf.lookupTransform('camera', 'base', rospy.Time())
     #     r = R.from_quat(quaternion)
     #     rotation_matrix = r.as_matrix()
     #     return translation, rotation_matrix
+
+    def get_goal_pose_array(self, topic_name):
+        """get goal pose array from ros topic topic_name.
+
+        Args:
+            topic_name (str): ros topic name to receive goal pose array.
+        """
+        self.goal_pose_array = rospy.wait_for_message(topic_name, PoseArray, timeout=30.)
+    
+    def goto_pose_array(self):
+        """Go to a pose array received by self.get_goal_pose_array.
+        """
+        # if self.goal_pose_array is not None:
+        #     goal = GoToPoseGoal()
+        #     goal.goal_poses.header.seq = 1
+        #     goal.goal_poses.header.stamp = rospy.Time().now()
+        #     goal.goal_poses.header.frame_id = 'base_link'
+        #     goal.goal_poses.poses = self.transform_pose_array(self.goal_pose_array)
+        #     self.client.send_goal(goal)
+        #     self.client.wait_for_result()
+        #     result = self.client.get_result()
+        #     return result
+        # else:
+        #     rospy.loginfo('pose array goal not received.')
+        #     return None
+        if self.goal_pose_array is not None:
+            goal_poses_base_link = self.transform_pose_array(self.goal_pose_array)
+            for goal_pose in goal_poses_base_link:
+                self.manual_goto(goal_pose)
+
+    def transform_pose_array(self, pose_array, target_frame='base_link'):
+        """transform a pose array from current frame to target frame.
+
+        Args:
+            pose_array (geometry_msgs/PoseArray): a pose array 
+            target_frame (str, optional): target frame. Defaults to 'base_link'.
+
+        Returns:
+            Pose[]: A list of poses on target frame.
+        """
+        assert pose_array.header.frame_id != target_frame
+        current_frame = pose_array.header.frame_id
+        header = Header()
+        header.seq = 1
+        header.stamp = self.tf.getLatestCommonTime(current_frame, target_frame)
+        header.frame_id = current_frame
+        goal_poses = []
+        for i in range(len(pose_array.poses)):
+            pose_stamped = PoseStamped()
+            pose_stamped.header = header
+            pose_stamped.pose = pose_array.poses[i]
+            goal_poses.append(self.tf.transformPose(target_frame, pose_stamped).pose)
+        return goal_poses
+
+        
+
 
     def goto(self):
         if self.curve is None:
@@ -148,16 +208,20 @@ class RobotController(object):
             # if move_result.waypoint_reached:
             self.i += 1
 
-    def manual_goto(self, pos, quat):
-        rospy.loginfo('manual goal set %s' % pos)
+    def manual_goto(self, pose):
+        """manually input goal pose (single) for the robot to go.
+
+        Args:
+            pose (geometry_msgs/Pose): goal pose.
+        """
+        if isinstance(pose, PoseStamped):
+            pose = pose.pose
+        rospy.loginfo('manual goal set %s' % pose)
         goal = GoToPoseGoal()
-        goal.position_x = pos[0]
-        goal.position_y = pos[1]
-        goal.position_z = pos[2]
-        goal.orientation_x = quat[0]
-        goal.orientation_y = quat[1]
-        goal.orientation_z = quat[2]
-        goal.orientation_w = quat[3]
+        goal.goal_poses.header.seq = 1
+        goal.goal_poses.header.stamp = rospy.Time().now()
+        goal.goal_poses.header.frame_id = 'base_link'
+        goal.goal_poses.poses = [pose]
         self.client.send_goal(goal)
         self.client.wait_for_result()
         move_result = self.client.get_result()
@@ -196,14 +260,14 @@ if __name__ == '__main__':
         # print(controller.tf.getFrameStrings())
         print(goal)
         goal_pose_base = controller.tf.transformPose('base_link', goal)
-        goal_pos_base = [goal_pose_base.pose.position.x,
-                        goal_pose_base.pose.position.y,
-                        goal_pose_base.pose.position.z]
-        goal_quat_base = [goal_pose_base.pose.orientation.x,
-                        goal_pose_base.pose.orientation.y,
-                        goal_pose_base.pose.orientation.z,
-                        goal_pose_base.pose.orientation.w]
-        controller.manual_goto(goal_pos_base, goal_quat_base)
+        # goal_pos_base = [goal_pose_base.pose.position.x,
+        #                 goal_pose_base.pose.position.y,
+        #                 goal_pose_base.pose.position.z]
+        # goal_quat_base = [goal_pose_base.pose.orientation.x,
+        #                 goal_pose_base.pose.orientation.y,
+        #                 goal_pose_base.pose.orientation.z,
+        #                 goal_pose_base.pose.orientation.w]
+        controller.manual_goto(goal_pose_base.pose)
     print("press w/a/s/d for moving the tool, and press i/j/k/l to tilt the tool")
     while not rospy.is_shutdown():
         try:

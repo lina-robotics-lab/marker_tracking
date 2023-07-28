@@ -209,26 +209,16 @@ class GoToServer:
       self.server.set_aborted()
     else:
       move_group = self.controller.move_group
-      pose_goal = Pose()
-      pose_goal.position.x = goal.position_x
-      pose_goal.position.y = goal.position_y
-      pose_goal.position.z = goal.position_z
-      pose_goal.orientation.x = goal.orientation_x
-      pose_goal.orientation.y = goal.orientation_y
-      pose_goal.orientation.z = goal.orientation_z
-      pose_goal.orientation.w = goal.orientation_w
 
       success = False
       result = GoToPoseActionResult()
-
+      print(goal)
       if cartisian:
-        waypoints = []
-        waypoints.append(pose_goal)
+        waypoints = goal.goal_poses.poses
         (plan, fraction) = move_group.compute_cartesian_path(waypoints, 0.01, 0.0)
         rospy.loginfo('planning success')
         self.display_trajectory(plan)
         success = move_group.execute(plan, wait=True)
-        print(plan)
         rospy.loginfo('move_success %s' % success)
         # print("Press g to execute the plan, or r to replay the planned path, or a to abort")
         # while True:
@@ -247,7 +237,8 @@ class GoToServer:
         #      pass
 
       else:
-        move_group.set_pose_target(pose_goal)
+        raise NotImplementedError
+        # move_group.set_pose_target(goal.goal_poses)
         # plan_results = move_group.plan()
         # print('plan_successful: {}'.format(plan_results[0]))
         # keys = input("Press Enter to execute the plan, or r to replay the planned path, or a to abort")
@@ -257,7 +248,7 @@ class GoToServer:
         #   move_group.display_trajectory()
         # elif keys == "a":
         #   success = False
-        success = move_group.go(wait=True)
+        # success = move_group.go(wait=True)
       
       if success:
         result.result.waypoint_reached = True

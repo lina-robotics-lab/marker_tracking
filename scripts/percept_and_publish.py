@@ -11,7 +11,7 @@ import actionlib
 import pyrealsense2 as rs
 # import matplotlib.pyplot as plt
 
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseArray, Pose
 from sensor_msgs.msg import JointState
 from eye_tracking_server.msg import GoToPoseAction, GoToPoseGoal
 from collections import deque
@@ -202,12 +202,12 @@ def bezier(input, divs = 50):
 
 def buildPath(pointSrc, pointDest, matrixSrc, matrixDest, divs = 50):
 
-    if np.dot(matrixSrc[2], matrixDest[2]) < 0:
-        matrixDest *= -1
+    # if np.dot(matrixSrc[2], matrixDest[2]) < 0:
+    #     matrixDest *= -1
 
-    if np.dot(matrixSrc[0], matrixDest[0]) < 0:
-        matrixDest[0] *= -1
-        matrixDest[1] *= -1
+    # if np.dot(matrixSrc[0], matrixDest[0]) < 0:
+    #     matrixDest[0] *= -1
+    #     matrixDest[1] *= -1
 
     normal = matrixDest[2]
     distance = cv2.norm(pointDest - pointSrc, cv2.NORM_L2)
@@ -321,9 +321,9 @@ if __name__ == '__main__':
     # Start streaming
     pipeline.start(config)
     rospy.init_node('camera', disable_signals=True)
-    rate = rospy.Rate(30)
+    rate = rospy.Rate(10)
     tf_publisher = tf.TransformBroadcaster()
-    goal_pose_publisher = rospy.Publisher('camera/goal_pose', PoseStamped, queue_size=10)
+    goal_pose_publisher = rospy.Publisher('camera/goal_pose_array', PoseArray, queue_size=10)
 
 
     seq_gen = False
@@ -386,13 +386,14 @@ if __name__ == '__main__':
                 
                 pointSrc = np.array([0, 0, 0])
                 pointDest = marker.tvec[0]
+                pointDest[2] -= 30.
                 matrixSrc = np.array([np.array([1, 0, 0]),
-                                    np.array([0, 1, 0]),
-                                    np.array([0, 0, 1])])
+                                    np.array([0, -1, 0]),
+                                    np.array([0, 0, -1])])
                 matrixDest = rotationMatrix
                 
                 if not seq_gen:
-                    curve, newMats = buildPath(pointSrc, pointDest, matrixSrc, matrixDest, 50)
+                    curve, newMats = buildPath(pointSrc, pointDest, matrixSrc, matrixDest, 10)
                     rospy.loginfo('traj generated!')
                     seq_gen = True
 
@@ -464,31 +465,37 @@ if __name__ == '__main__':
                                            tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M)),
                                         rospy.Time.now(), 'target', 'camera')
 
-                for i in range(len(newMats)):
-                    # mat = np.eye(4)
-                    # mat[:3, :3] = newMats[i]
-                    print(rotationMatrix)
-                    if i % 10 == 0:
-                        tf_publisher.sendTransform(curve[i] / 1000.,
-                                                tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M)),
-                                                rospy.Time.now(), 'traj{}'.format(str(i)), 'camera')
+                # for i in range(len(newMats)):
+                #     mat = np.eye(4)
+                #     mat[:3, :3] = newMats[i]
+                #     # print(newMats[i])
+                #     # print(np.linalg.norm(newMats[i][0]), np.linalg.norm(newMats[i][1]), np.linalg.norm(newMats[i][2]),
+                #     #       np.linalg.norm(tf.transformations.quaternion_from_matrix(mat)))
+                #     if i % 10 == 9:
+                #         tf_publisher.sendTransform(curve[i] / 1000.,
+                #                                 tf.transformations.quaternion_from_matrix(tf.transformations.concatenate_matrices(mat, M)),
+                #                                 rospy.Time.now(), 'traj{}'.format(str(i)), 'camera')
 
-                goal = PoseStamped()
+                goal_path = PoseArray()
 
-                goal.header.seq = 1
-                goal.header.stamp = rospy.Time.now()
-                goal.header.frame_id = "camera"
+                goal_path.header.seq = 1
+                goal_path.header.stamp = rospy.Time.now()
+                goal_path.header.frame_id = "camera"
 
-                goal.pose.position.x = pointDest[0] / 1000.
-                goal.pose.position.y = pointDest[1] / 1000.
-                goal.pose.position.z = pointDest[2] / 1000.
+                for i in range(len(curve)):
 
-                goal.pose.orientation.x = target_quat_camera[0]
-                goal.pose.orientation.y = target_quat_camera[1]
-                goal.pose.orientation.z = target_quat_camera[2]
-                goal.pose.orientation.w = target_quat_camera[3]
-                goal_pose_publisher.publish(goal)
+                    goal = Pose()
+                    goal.position.x = pointDest[0] / 1000.
+                    goal.position.y = pointDest[1] / 1000.
+                    goal.position.z = pointDest[2] / 1000.
 
+                    goal.orientation.x = target_quat_camera[0]
+                    goal.orientation.y = target_quat_camera[1]
+                    goal.orientation.z = target_quat_camera[2]
+                    goal.orientation.w = target_quat_camera[3]
+                    goal_path.poses.append(goal)
+                
+                goal_pose_publisher.publish(goal_path)
 
             rate.sleep()
 

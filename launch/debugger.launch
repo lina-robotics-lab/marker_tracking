@@ -1,0 +1,14 @@
+<launch>
+
+  <node name="track_marker" pkg="eye_tracking_server" type="track_marker.py" respawn="false" output="screen">
+  </node>
+  <!-- <node name="percept_and_publish" 
+        pkg="eye_tracking_server" 
+        type="percept_and_publish.py" respawn="false" output="screen">
+  </node>
+  <node name="" 
+        pkg="eye_tracking_server" 
+        type="pose_publisher.py" respawn="false" output="screen">
+  </node> -->
+
+</launch>
