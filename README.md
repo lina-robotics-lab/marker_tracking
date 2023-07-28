@@ -6,10 +6,10 @@ Clone this package to the src/ folder of your catkin workspace, then build the p
 
 ```bash
   $ cd ~/catkin_ws/src
-  $ git clone https://github.com/lina-robotics-lab/eye_tracking_server.git
+  $ git clone https://github.com/lina-robotics-lab/marker_tracking.git
   $ cd ~/catkin_ws
   $ rosdep install --from-paths src --ignore-src -r -y
-  $ catkin build eye_tracking_server
+  $ catkin build marker_tracking
 ```
 
 # Step 1: bring up the robot
@@ -25,7 +25,7 @@ You might need to click enter three times after each time the output finishes to
 Source the ROS workspace, then run 
 
 ```bash
-  $ roslaunch eye_tracking_server marker_tracking_control.launch
+  $ roslaunch marker_tracking marker_tracking_control.launch
 ```
 
 You might need to press Enter to start the robot arm control server.
@@ -33,6 +33,6 @@ You might need to press Enter to start the robot arm control server.
 # Step 3 start the tracking control
 
 ```bash
-  $ rosrun eye_tracking_server track_marker.py
+  $ rosrun marker_tracking track_marker.py
 ```
 
