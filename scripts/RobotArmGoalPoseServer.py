@@ -23,9 +23,9 @@ from geometry_msgs.msg import Pose
 from region import AcquisitionRegion
 
 # The eye_tracking_server.msg is placed under /catkin_ws/devel/shared/eye_tracking_server/msgs
-from eye_tracking_server.msg import GoToPoseAction, GoToPoseActionResult
+from marker_tracking.msg import GoToPoseAction, GoToPoseActionResult
 
-from eye_tracking_server.srv import nbOfPosition,nbOfPositionResponse
+# from eye_tracking_server.srv import nbOfPosition,nbOfPositionResponse
 
 
 # Modules required by the get_key() function, used in the manual mode.
@@ -136,9 +136,6 @@ class GoToServer:
         print('Command {} not recognized.'.format(command))
       elif command == 'd':
         success = self.move_down()
-
-  def handle_nbOfPosition(self,req):
-      return nbOfPositionResponse(len(self.waypoints))
   
   def stop(self):
     self.controller.move_group.stop()

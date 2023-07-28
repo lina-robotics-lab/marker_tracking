@@ -4,7 +4,7 @@ from __future__ import print_function
 import moveit_commander
 from geometry_msgs.msg import PoseStamped, Pose, PoseArray
 from std_msgs.msg import Header
-from eye_tracking_server.msg import GoToPoseAction, GoToPoseGoal
+from marker_tracking.msg import GoToPoseAction, GoToPoseGoal
 from collections import deque
 
 import numpy as np

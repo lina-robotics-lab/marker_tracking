@@ -13,7 +13,7 @@ import pyrealsense2 as rs
 
 from geometry_msgs.msg import PoseStamped, PoseArray, Pose
 from sensor_msgs.msg import JointState
-from eye_tracking_server.msg import GoToPoseAction, GoToPoseGoal
+from marker_tracking.msg import GoToPoseAction, GoToPoseGoal
 from collections import deque
 from copy import deepcopy
 
@@ -21,6 +21,9 @@ from controller import AcquisitionControl
 
 import rospy
 import tf
+
+import rospkg
+pkg_dir = rospkg.RosPack().get_path('marker_tracking')
 
 
 from skimage.transform import ProjectiveTransform
@@ -35,8 +38,8 @@ distortionCoeffs = np.zeros((8), dtype=np.float32)
 # print(package_share_directory)
 # sys.path.append('~/colcon_ws/src/goal_publisher')
 
-cameraMatrix = np.load("/home/mht/catkin_ws/src/eye_tracking_server/cameraMatrix.npy")
-distortionCoeffs = np.load("/home/mht/catkin_ws/src/eye_tracking_server/distortions.npy")
+cameraMatrix = np.load(osp.join(pkg_dir, "cameraMatrix.npy"))
+distortionCoeffs = np.load(osp.join(pkg_dir, "distortions.npy"))
 
 ARUCO_DICT = {
                 "DICT_4X4_50": cv2.aruco.DICT_4X4_50,

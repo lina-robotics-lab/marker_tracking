@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(eye_tracking_server)
+project(marker_tracking)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -71,15 +71,15 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   nbOfPosition.srv
-)
+# add_service_files(
+#    FILES
+#    nbOfPosition.srv
+# )
 
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  GoTo.action
+  # GoTo.action
   GoToPose.action
 )
 
@@ -203,11 +203,13 @@ include_directories(
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-# install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-# )
+install(FILES
+  # myfile1
+  # myfile2
+  cameraMatrix.npy
+  distortions.npy
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+)
 
 #############
 ## Testing ##
